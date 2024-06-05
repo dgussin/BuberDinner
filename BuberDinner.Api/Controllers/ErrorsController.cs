@@ -1,4 +1,3 @@
-using BuberDinner.Application.Errors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,12 +10,11 @@ public class ErrorsController : ControllerBase
   {
     Exception? exception = HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
 
-    var (statuCode, message) = exception switch
-    {
-      IServiceException serviceException => ((int)serviceException.StatusCode, serviceException.ErrorMessage),
-      _ => (500, "An error occured while processing your request.")
-    };
-
-    return Problem(statusCode: statuCode, title: message);
+    return Problem(
+      detail: exception?.Message,
+      title: "An error occurred",
+      statusCode: StatusCodes.Status500InternalServerError,
+      type: "https://buberdinner.com/errors/internal-server-error"
+    );
   }
 }

@@ -1,18 +1,19 @@
-using BuberDinner.Api.Filters;
 using BuberDinner.Application.Common.Errors;
 using BuberDinner.Application.Services.Authentication;
 using BuberDinner.Contracts.Authenication;
+using BuberDinner.Domain.Common.Errors;
+using ErrorOr;
 using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 
 
 namespace BuberDinner.Api.Contollers;
 
-[ApiController]
+
 [Route("auth")]
 // instead of adding filter to all controller individually [ErrorHandlingFilter]
 // program.cs can be modified to add filter globally
-public class AuthenticationContoller : ControllerBase
+public class AuthenticationContoller : ApiController
 {
 
   private readonly IAuthenticationService _authenticationService;
@@ -25,26 +26,16 @@ public class AuthenticationContoller : ControllerBase
   [HttpPost("register")]
   public IActionResult Register(RegisterRequest registerRequest)
   {
-    Result<AuthenticationResult> registerResult = _authenticationService.Register(
+    ErrorOr<AuthenticationResult> authResult = _authenticationService.Register(
       registerRequest.FirstName,
       registerRequest.LastName,
       registerRequest.Email,
       registerRequest.Password);
 
-    if (registerResult.IsSuccess)
-    {
-      return Ok(MapAuthResult(registerResult.Value));
-    }
-
-    var firstError = registerResult.Errors[0];
-
-    if (firstError is DuplicateEmailError)
-    {
-      return Problem(statusCode: StatusCodes.Status409Conflict, detail: "Email already exists");
-    }
-
-    return Problem();
-
+    return authResult.Match(
+      authResult => Ok(MapAuthResult(authResult)),
+      errors => Problem(errors)
+    );
   }
 
   private static AuthenicationResponse MapAuthResult(AuthenticationResult authResult)
@@ -64,14 +55,19 @@ public class AuthenticationContoller : ControllerBase
       loginRequest.Email,
       loginRequest.Password);
 
-    var response = new AuthenicationResponse(
-      authResult.User.Id,
-      authResult.User.FirstName,
-      authResult.User.LastName,
-      authResult.User.Email,
-      authResult.Token);
+    // example of overriding the default status code
+    if (authResult.IsError && authResult.FirstError == Errors.Authentication.InvalidCredentials)
+    {
+      return Problem(
+        statusCode: StatusCodes.Status401Unauthorized,
+        title: authResult.FirstError.Description
+      );
+    }
 
-    return Ok(response);
+    return authResult.Match(
+       authResult => Ok(MapAuthResult(authResult)),
+       errors => Problem(errors)
+     );
   }
 
 }
