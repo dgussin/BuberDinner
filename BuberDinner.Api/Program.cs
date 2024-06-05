@@ -1,6 +1,7 @@
 using BuberDinner.Application.Services.Authentication;
 using BuberDinner.Application;
 using BuberDinner.Infrastructure;
+using BuberDinner.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 {
@@ -25,6 +26,9 @@ var app = builder.Build();
     //     app.UseSwagger();
     //     app.UseSwaggerUI();
     // }
+
+    // 1st approach to global error handling
+    //app.UseMiddleware<ErrorHandlingMiddleware>();
 
     app.UseHttpsRedirection();
 
