@@ -1,5 +1,6 @@
 using BuberDinner.Application.Common.Interfaces.Authentication;
 using BuberDinner.Application.Common.Interfaces.Persistence;
+using BuberDinner.Application.Errors;
 using BuberDinner.Domain.Entities;
 
 namespace BuberDinner.Application.Services.Authentication;
@@ -21,7 +22,7 @@ public class AuthenticationService : IAuthenticationService
     // 1. Validate the user doesn't exist
     if (_userRepository.GetUserByEmail(email) is not null)
     {
-      throw new Exception("User with given email already exits");
+      throw new DuplicateEmailException();
     }
 
     // 2. create user (generate unique ID) & Persist to DB

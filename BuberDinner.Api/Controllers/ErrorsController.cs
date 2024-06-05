@@ -1,3 +1,4 @@
+using BuberDinner.Application.Errors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,13 @@ public class ErrorsController : ControllerBase
   public IActionResult Error()
   {
     Exception? exception = HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
-    return Problem(title: exception?.Message, statusCode: 400);
+
+    var (statuCode, message) = exception switch
+    {
+      IServiceException serviceException => ((int)serviceException.StatusCode, serviceException.ErrorMessage),
+      _ => (500, "An error occured while processing your request.")
+    };
+
+    return Problem(statusCode: statuCode, title: message);
   }
 }
